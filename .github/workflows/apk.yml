@@ -27,7 +27,7 @@ jobs:
 
       - name: Extract Android project
         run: |
-          ZIP_FILE=$(find . -maxdepth 1 -type f -name "MF_Bucket_Tracker_v18_Compact_Home_Profile_Menu.zip" | head -n 1)
+          ZIP_FILE=$(find . -maxdepth 1 -type f -name "MF_Bucket_Tracker_v19_Profile_Menu_Fixed.zip" | head -n 1)
           echo "Using ZIP: $ZIP_FILE"
           mkdir -p build-project
           unzip -q "$ZIP_FILE" -d build-project
