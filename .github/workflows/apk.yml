@@ -1,9 +1,10 @@
-name: Build MF Bucket Tracker V24 All Problems Rebalancing
+name: Build MF Bucket Tracker V25 All Problems Fixed
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
@@ -19,47 +20,67 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and extract V24 project
+      - name: Find and extract V25 project
         shell: bash
         run: |
           set -e
-          ZIP="$(find . -maxdepth 2 -type f -name 'MF_Bucket_Tracker_v24_All_Problems_Rebalancing.zip' | head -n 1)"
+
+          ZIP=$(find . -maxdepth 2 -type f \
+            -name "MF_Bucket_Tracker_v25_All_Problems_Fixed.zip" | head -n 1)
+
           if [ -z "$ZIP" ]; then
-            echo "V24 ZIP not found"
+            echo "V25 ZIP not found"
             exit 1
           fi
-          rm -rf build-v24
-          mkdir -p build-v24
-          unzip -q "$ZIP" -d build-v24
-          PROJECT="$(find build-v24 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
+
+          rm -rf build-v25
+          mkdir -p build-v25
+
+          unzip -q "$ZIP" -d build-v25
+
+          PROJECT=$(find build-v25 -type f \
+            -name settings.gradle -print | head -n 1 | xargs dirname)
+
           if [ -z "$PROJECT" ]; then
             echo "Android project not found"
             exit 1
           fi
+
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
+
+          echo "Android project:"
+          echo "$PROJECT"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: Build V24 debug APK
+      - name: Build V25 debug APK
         working-directory: ${{ env.PROJECT }}
-        run: gradle assembleDebug --no-daemon
+        run: |
+          gradle assembleDebug --no-daemon
 
       - name: Find APK
         shell: bash
         run: |
           set -e
-          APK="$(find "${PROJECT}/app/build/outputs/apk/debug" -type f -name '*.apk' | head -n 1)"
+
+          APK=$(find "${PROJECT}/app/build/outputs/apk/debug" \
+            -type f -name "*.apk" | head -n 1)
+
           if [ -z "$APK" ]; then
             echo "APK not found"
             exit 1
           fi
-          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V24.apk"
 
-      - name: Upload V24 APK
+          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V25.apk"
+
+          echo "APK created:"
+          ls -lh "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V25.apk"
+
+      - name: Upload V25 APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-V24-All-Problems-Rebalancing-APK
-          path: MF-Bucket-Tracker-V24.apk
+          name: MF-Bucket-Tracker-V25-All-Problems-Fixed-APK
+          path: MF-Bucket-Tracker-V25.apk
