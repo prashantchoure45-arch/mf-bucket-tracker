@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker v21 Final Fixed
+name: Build MF Bucket Tracker v22 Multi Profile News Guide
 
 on:
   workflow_dispatch:
@@ -17,24 +17,24 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find exact V21 Final ZIP
+      - name: Find exact V22 ZIP
         shell: bash
         run: |
           set -e
 
-          ZIP="./MF_Bucket_Tracker_v21_Final_Fixed.zip"
+          ZIP=$(find . -name 'MF_Bucket_Tracker_v22_MultiProfile_News_Guide.zip' -print -quit)
 
-          if [ ! -f "$ZIP" ]; then
-            echo "ERROR: Exact V21 Final ZIP not found"
-            echo "Available V21 ZIP files:"
-            find . -maxdepth 1 -type f -name 'MF_Bucket_Tracker_v21_*.zip' -print
+          if [ -z "$ZIP" ]; then
+            echo "ERROR: Exact V22 ZIP not found"
+            echo "Available V22 ZIP files:"
+            find . -maxdepth 1 -type f -name '*v22*.zip' -print
             exit 1
           fi
 
           echo "Using EXACT ZIP: $ZIP"
           echo "ZIP_PATH=$ZIP" >> "$GITHUB_ENV"
 
-      - name: Extract V21 Final project
+      - name: Extract V22 project
         shell: bash
         run: |
           set -e
@@ -44,23 +44,28 @@ jobs:
 
           unzip -q "$ZIP_PATH" -d build-source
 
-          PROJECT=$(find build-source -type f -name settings.gradle -printf '%h\n' | head -1)
+          PROJECT=$(find build-source -type f -name settings.gradle -print -quit)
 
           if [ -z "$PROJECT" ]; then
             echo "ERROR: Android project not found"
+            find build-source -maxdepth 4 -type f | head -100
             exit 1
           fi
+
+          PROJECT=$(dirname "$PROJECT")
 
           echo "Android project: $PROJECT"
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
 
-      - name: Verify project
+      - name: Verify V22 project
         shell: bash
         run: |
           set -e
+
           test -f "$PROJECT/settings.gradle"
           test -f "$PROJECT/app/build.gradle"
-          echo "V21 Final project verification passed."
+
+          echo "V22 project verification passed."
 
       - name: Make Gradle executable
         shell: bash
@@ -87,7 +92,7 @@ jobs:
         run: |
           set -e
 
-          APK=$(find "$PROJECT" -type f -path '*/build/outputs/apk/*/*.apk' -print -quit)
+          APK=$(find "$PROJECT" -type f -path '*/build/outputs/apk/*.apk' -print -quit)
 
           if [ -z "$APK" ]; then
             echo "ERROR: APK not found"
@@ -97,9 +102,9 @@ jobs:
           echo "APK built: $APK"
           echo "APK_PATH=$APK" >> "$GITHUB_ENV"
 
-      - name: Upload V21 Final APK
+      - name: Upload V22 Final APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-v21-Final-Fixed-APK
+          name: MF-Bucket-Tracker-v22-MultiProfile-News-Guide-APK
           path: ${{ env.APK_PATH }}
           if-no-files-found: error
