@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker v20 APK
+name: Build MF Bucket Tracker v21 APK
 
 on:
   workflow_dispatch:
@@ -17,27 +17,28 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and extract v20 project
+      - name: Find and extract v21 project
+        shell: bash
         run: |
           set -e
 
-          ZIP=$(find . -maxdepth 2 -type f \
-            -name 'MF_Bucket_Tracker_v20_Dedicated_Pages_Fixed.zip' \
-            -o -name '*v20*Dedicated*Pages*Fixed*.zip' | head -1)
+          ZIP=$(find . -maxdepth 1 -type f -name 'MF_Bucket_Tracker_v21_*.zip' -print -quit)
 
           if [ -z "$ZIP" ]; then
-            echo "v20 ZIP not found"
+            echo "v21 ZIP not found"
+            echo "Available ZIP files:"
+            find . -maxdepth 1 -type f -name '*.zip' -print
             exit 1
           fi
 
-          echo "Using: $ZIP"
+          echo "Using ZIP: $ZIP"
 
           rm -rf build-source
-          mkdir build-source
+          mkdir -p build-source
 
           unzip -q "$ZIP" -d build-source
 
-          PROJECT=$(find build-source -name settings.gradle -printf '%h\n' | head -1)
+          PROJECT=$(find build-source -type f -name settings.gradle -printf '%h\n' | head -1)
 
           if [ -z "$PROJECT" ]; then
             echo "Android project not found"
@@ -45,11 +46,11 @@ jobs:
           fi
 
           echo "Project: $PROJECT"
-
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
 
       - name: Make Gradle executable
-        run: chmod +x "$PROJECT/gradlew" 2>/dev/null || true
+        run: |
+          chmod +x "$PROJECT/gradlew" 2>/dev/null || true
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -57,20 +58,28 @@ jobs:
       - name: Build Debug APK
         working-directory: ${{ env.PROJECT }}
         run: |
-          if [ -f ./gradlew ]; then
-            ./gradlew assembleDebug
+          if [ -f "./gradlew" ]; then
+            ./gradlew assembleDebug --no-daemon
           else
-            gradle assembleDebug
+            gradle assembleDebug --no-daemon
           fi
 
       - name: Find APK
+        shell: bash
         run: |
-          find "$PROJECT" -type f -name '*.apk' -print
+          APK=$(find "$PROJECT" -type f -name '*.apk' | head -1)
 
-      - name: Upload APK
+          if [ -z "$APK" ]; then
+            echo "APK not found"
+            exit 1
+          fi
+
+          echo "APK: $APK"
+          echo "APK_PATH=$APK" >> "$GITHUB_ENV"
+
+      - name: Upload v21 APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-v20-APK
-          path: |
-            ${{ env.PROJECT }}/app/build/outputs/apk/debug/*.apk
+          name: MF-Bucket-Tracker-v21-APK
+          path: ${{ env.APK_PATH }}
           if-no-files-found: error
