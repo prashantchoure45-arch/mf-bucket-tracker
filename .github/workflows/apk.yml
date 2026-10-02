@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V34 News FD Rates Fix
+name: Build MF Bucket Tracker V35 Full Article Fix
 
 on:
   workflow_dispatch:
@@ -19,25 +19,25 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and extract V34 project
+      - name: Find and extract V35 project
         shell: bash
         run: |
           set -e
 
-          ZIP="$(find . -maxdepth 4 -type f -name 'MF_Bucket_Tracker_V34_News_FD_Rates_Fix.zip' | head -n 1)"
+          ZIP="$(find . -maxdepth 4 -type f -name 'MF_Bucket_Tracker_V35_Full_Article_Fix.zip' | head -n 1)"
 
           if [ -z "$ZIP" ]; then
-            echo "V34 ZIP not found"
+            echo "V35 ZIP not found"
             exit 1
           fi
 
           echo "Found ZIP: $ZIP"
 
-          rm -rf build-v34
-          mkdir -p build-v34
-          unzip -q "$ZIP" -d build-v34
+          rm -rf build-v35
+          mkdir -p build-v35
+          unzip -q "$ZIP" -d build-v35
 
-          PROJECT="$(find build-v34 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
+          PROJECT="$(find build-v35 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
 
           if [ -z "$PROJECT" ]; then
             echo "Android project not found"
@@ -52,7 +52,7 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Build V34 Debug APK
+      - name: Build V35 Debug APK
         working-directory: ${{ env.PROJECT }}
         run: gradle assembleDebug --no-daemon
 
@@ -68,10 +68,10 @@ jobs:
             exit 1
           fi
 
-          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V34.apk"
+          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V35.apk"
 
-      - name: Upload V34 APK
+      - name: Upload V35 APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-V34-News-FD-Rates-Fix-APK
-          path: MF-Bucket-Tracker-V34.apk
+          name: MF-Bucket-Tracker-V35-Full-Article-Fix-APK
+          path: MF-Bucket-Tracker-V35.apk
