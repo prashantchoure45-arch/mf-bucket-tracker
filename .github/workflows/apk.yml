@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V27
+name: Build MF Bucket Tracker V28 Fixed Allocation Rebalance
 
 on:
   workflow_dispatch:
@@ -8,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,67 +18,47 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and extract V27 project
+      - name: Find and extract V28 project
         shell: bash
         run: |
           set -e
-
-          ZIP="$(find . -maxdepth 3 -type f \
-            -name 'MF_Bucket_Tracker_v27_Bucket_Allocation_Rebalance_Fixed.zip' \
-            | head -n 1)"
-
+          ZIP="$(find . -maxdepth 3 -type f -name 'MF_Bucket_Tracker_v28_Fixed_Allocation_Rebalance_Transfer.zip' | head -n 1)"
           if [ -z "$ZIP" ]; then
-            echo "V27 ZIP not found"
+            echo "V28 ZIP not found"
             exit 1
           fi
-
-          echo "Found: $ZIP"
-
-          rm -rf build-v27
-          mkdir -p build-v27
-
-          unzip -q "$ZIP" -d build-v27
-
-          PROJECT="$(find build-v27 -type f \
-            -name settings.gradle \
-            -printf '%h\n' | head -n 1)"
-
+          rm -rf build-v28
+          mkdir -p build-v28
+          unzip -q "$ZIP" -d build-v28
+          PROJECT="$(find build-v28 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
           if [ -z "$PROJECT" ]; then
             echo "Android project not found"
             exit 1
           fi
-
-          echo "PROJECT=$PROJECT" | tee "$GITHUB_ENV"
-          echo "Android project: $PROJECT"
+          echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: Build V27 Debug APK
+      - name: Build V28 Debug APK
         working-directory: ${{ env.PROJECT }}
-        run: |
-          gradle assembleDebug --no-daemon
+        run: gradle assembleDebug --no-daemon
 
       - name: Find APK
         shell: bash
         run: |
           set -e
-
-          APK="$(find "${PROJECT}/app/build/outputs/apk/debug" \
-            -type f -name '*.apk' | head -n 1)"
-
+          APK="$(find "${PROJECT}/app/build/outputs/apk/debug" -type f -name '*.apk' | head -n 1)"
           if [ -z "$APK" ]; then
             echo "APK not found"
             exit 1
           fi
+          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V28.apk"
 
-          echo "APK found: $APK"
-          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V27.apk"
-
-      - name: Upload V27 APK
+      - name: Upload V28 APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-V27-APK
-          path: MF-Bucket-Tracker-V27.apk
+          name: MF-Bucket-Tracker-V28-Fixed-Allocation-Rebalance-Transfer-APK
+          path: MF-Bucket-Tracker-V28.apk
