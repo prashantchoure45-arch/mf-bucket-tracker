@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V30 Advanced Reduce Remaining
+name: Build MF Bucket Tracker V31 Allocation Fix
 
 on:
   workflow_dispatch:
@@ -19,24 +19,22 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and extract V30 project
+      - name: Find and extract V31 project
         shell: bash
         run: |
           set -e
-
-          ZIP="$(find . -maxdepth 3 -type f -name 'MF_Bucket_Tracker_V30_Advanced_Reduce_Remaining.zip' | head -n 1)"
+          ZIP="$(find . -maxdepth 3 -type f -name 'MF_Bucket_Tracker_V31_Allocation_Fix.zip' | head -n 1)"
 
           if [ -z "$ZIP" ]; then
-            echo "V30 ZIP not found"
+            echo "V31 ZIP not found"
             exit 1
           fi
 
-          rm -rf build-v30
-          mkdir -p build-v30
+          rm -rf build-v31
+          mkdir -p build-v31
+          unzip -q "$ZIP" -d build-v31
 
-          unzip -q "$ZIP" -d build-v30
-
-          PROJECT="$(find build-v30 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
+          PROJECT="$(find build-v31 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
 
           if [ -z "$PROJECT" ]; then
             echo "Android project not found"
@@ -50,7 +48,7 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Build V30 Debug APK
+      - name: Build V31 Debug APK
         working-directory: ${{ env.PROJECT }}
         run: gradle assembleDebug --no-daemon
 
@@ -58,7 +56,6 @@ jobs:
         shell: bash
         run: |
           set -e
-
           APK="$(find "${PROJECT}/app/build/outputs/apk/debug" -type f -name '*.apk' | head -n 1)"
 
           if [ -z "$APK" ]; then
@@ -66,10 +63,10 @@ jobs:
             exit 1
           fi
 
-          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V30.apk"
+          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V31.apk"
 
-      - name: Upload V30 APK
+      - name: Upload V31 APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-V30-Advanced-Reduce-Remaining-APK
-          path: MF-Bucket-Tracker-V30.apk
+          name: MF-Bucket-Tracker-V31-Allocation-Fix-APK
+          path: MF-Bucket-Tracker-V31.apk
