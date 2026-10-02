@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V32 Fixed Planner Rebalance
+name: Build MF Bucket Tracker V33 News NAV FD Calculator
 
 on:
   workflow_dispatch:
@@ -19,29 +19,33 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and extract V32 project
+      - name: Find and extract V33 project
         shell: bash
         run: |
           set -e
 
-          ZIP="$(find . -maxdepth 3 -type f -name 'MF_Bucket_Tracker_V32_Fixed_Planner_Rebalance.zip' | head -n 1)"
+          ZIP="$(find . -maxdepth 4 -type f -name 'MF_Bucket_Tracker_V33_News_NAV_FD_Calculator.zip' | head -n 1)"
 
           if [ -z "$ZIP" ]; then
-            echo "V32 ZIP not found"
+            echo "V33 ZIP not found"
             exit 1
           fi
 
-          rm -rf build-v32
-          mkdir -p build-v32
-          unzip -q "$ZIP" -d build-v32
+          echo "Found ZIP: $ZIP"
 
-          PROJECT="$(find build-v32 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
+          rm -rf build-v33
+          mkdir -p build-v33
+
+          unzip -q "$ZIP" -d build-v33
+
+          PROJECT="$(find build-v33 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
 
           if [ -z "$PROJECT" ]; then
             echo "Android project not found"
             exit 1
           fi
 
+          echo "Android project: $PROJECT"
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
 
       - name: Set up Gradle
@@ -49,26 +53,30 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Build V32 Debug APK
+      - name: Build V33 Debug APK
         working-directory: ${{ env.PROJECT }}
-        run: gradle assembleDebug --no-daemon
+        run: |
+          gradle assembleDebug --no-daemon
 
       - name: Find APK
         shell: bash
         run: |
           set -e
 
-          APK="$(find "${PROJECT}/app/build/outputs/apk/debug" -type f -name '*.apk' | head -n 1)"
+          APK="$(find "${PROJECT}/app/build/outputs/apk/debug" \
+            -type f -name '*.apk' | head -n 1)"
 
           if [ -z "$APK" ]; then
             echo "APK not found"
             exit 1
           fi
 
-          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V32.apk"
+          echo "APK found: $APK"
 
-      - name: Upload V32 APK
+          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V33.apk"
+
+      - name: Upload V33 APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-V32-Fixed-Planner-Rebalance-APK
-          path: MF-Bucket-Tracker-V32.apk
+          name: MF-Bucket-Tracker-V33-News-NAV-FD-Calculator-APK
+          path: MF-Bucket-Tracker-V33.apk
