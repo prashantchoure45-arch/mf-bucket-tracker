@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V28 Fixed Allocation Rebalance
+name: Build MF Bucket Tracker V30 Advanced Reduce Remaining
 
 on:
   workflow_dispatch:
@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,23 +19,30 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and extract V28 project
+      - name: Find and extract V30 project
         shell: bash
         run: |
           set -e
-          ZIP="$(find . -maxdepth 3 -type f -name 'MF_Bucket_Tracker_v28_Fixed_Allocation_Rebalance_Transfer.zip' | head -n 1)"
+
+          ZIP="$(find . -maxdepth 3 -type f -name 'MF_Bucket_Tracker_V30_Advanced_Reduce_Remaining.zip' | head -n 1)"
+
           if [ -z "$ZIP" ]; then
-            echo "V28 ZIP not found"
+            echo "V30 ZIP not found"
             exit 1
           fi
-          rm -rf build-v28
-          mkdir -p build-v28
-          unzip -q "$ZIP" -d build-v28
-          PROJECT="$(find build-v28 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
+
+          rm -rf build-v30
+          mkdir -p build-v30
+
+          unzip -q "$ZIP" -d build-v30
+
+          PROJECT="$(find build-v30 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
+
           if [ -z "$PROJECT" ]; then
             echo "Android project not found"
             exit 1
           fi
+
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
 
       - name: Set up Gradle
@@ -42,7 +50,7 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Build V28 Debug APK
+      - name: Build V30 Debug APK
         working-directory: ${{ env.PROJECT }}
         run: gradle assembleDebug --no-daemon
 
@@ -50,15 +58,18 @@ jobs:
         shell: bash
         run: |
           set -e
+
           APK="$(find "${PROJECT}/app/build/outputs/apk/debug" -type f -name '*.apk' | head -n 1)"
+
           if [ -z "$APK" ]; then
             echo "APK not found"
             exit 1
           fi
-          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V28.apk"
 
-      - name: Upload V28 APK
+          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V30.apk"
+
+      - name: Upload V30 APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-V28-Fixed-Allocation-Rebalance-Transfer-APK
-          path: MF-Bucket-Tracker-V28.apk
+          name: MF-Bucket-Tracker-V30-Advanced-Reduce-Remaining-APK
+          path: MF-Bucket-Tracker-V30.apk
