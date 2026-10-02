@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V33 News NAV FD Calculator
+name: Build MF Bucket Tracker V34 News FD Rates Fix
 
 on:
   workflow_dispatch:
@@ -19,26 +19,25 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and extract V33 project
+      - name: Find and extract V34 project
         shell: bash
         run: |
           set -e
 
-          ZIP="$(find . -maxdepth 4 -type f -name 'MF_Bucket_Tracker_V33_News_NAV_FD_Calculator.zip' | head -n 1)"
+          ZIP="$(find . -maxdepth 4 -type f -name 'MF_Bucket_Tracker_V34_News_FD_Rates_Fix.zip' | head -n 1)"
 
           if [ -z "$ZIP" ]; then
-            echo "V33 ZIP not found"
+            echo "V34 ZIP not found"
             exit 1
           fi
 
           echo "Found ZIP: $ZIP"
 
-          rm -rf build-v33
-          mkdir -p build-v33
+          rm -rf build-v34
+          mkdir -p build-v34
+          unzip -q "$ZIP" -d build-v34
 
-          unzip -q "$ZIP" -d build-v33
-
-          PROJECT="$(find build-v33 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
+          PROJECT="$(find build-v34 -type f -name settings.gradle -printf '%h\n' | head -n 1)"
 
           if [ -z "$PROJECT" ]; then
             echo "Android project not found"
@@ -53,30 +52,26 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Build V33 Debug APK
+      - name: Build V34 Debug APK
         working-directory: ${{ env.PROJECT }}
-        run: |
-          gradle assembleDebug --no-daemon
+        run: gradle assembleDebug --no-daemon
 
       - name: Find APK
         shell: bash
         run: |
           set -e
 
-          APK="$(find "${PROJECT}/app/build/outputs/apk/debug" \
-            -type f -name '*.apk' | head -n 1)"
+          APK="$(find "${PROJECT}/app/build/outputs/apk/debug" -type f -name '*.apk' | head -n 1)"
 
           if [ -z "$APK" ]; then
             echo "APK not found"
             exit 1
           fi
 
-          echo "APK found: $APK"
+          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V34.apk"
 
-          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V33.apk"
-
-      - name: Upload V33 APK
+      - name: Upload V34 APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-V33-News-NAV-FD-Calculator-APK
-          path: MF-Bucket-Tracker-V33.apk
+          name: MF-Bucket-Tracker-V34-News-FD-Rates-Fix-APK
+          path: MF-Bucket-Tracker-V34.apk
