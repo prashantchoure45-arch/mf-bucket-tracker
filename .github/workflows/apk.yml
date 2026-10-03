@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V36 Rebalancing APK
+name: Build MF Bucket Tracker V37 Fixed Rebalancing APK
 
 on:
   workflow_dispatch:
@@ -14,29 +14,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup JDK 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Find V36 Rebalancing ZIP
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Find V37 Project ZIP
         shell: bash
         run: |
           ZIP=$(find . -maxdepth 2 -type f \
-            -iname '*V36*Locked*Auto*Rebalance*.zip' \
-            | head -n 1)
+            -name 'MF_Bucket_Tracker_V37_Fixed_Rebalancing.zip' | head -n 1)
 
           if [ -z "$ZIP" ]; then
-            echo "V36 Rebalancing ZIP नहीं मिला"
+            echo "V37 ZIP नहीं मिला"
             exit 1
           fi
 
-          echo "ZIP मिला: $ZIP"
+          echo "ZIP: $ZIP"
 
           rm -rf build-project
           mkdir -p build-project
-
           unzip -q "$ZIP" -d build-project
 
           PROJECT_DIR=$(find build-project -type f -name settings.gradle \
@@ -49,12 +52,7 @@ jobs:
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
-
-      - name: Build V36 Rebalancing APK
+      - name: Build V37 Fixed Rebalancing APK
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           gradle assembleDebug --no-daemon
@@ -71,10 +69,12 @@ jobs:
           fi
 
           echo "APK: $APK"
-          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V36-Rebalancing.apk"
 
-      - name: Upload V36 Rebalancing APK
+          cp "$APK" \
+            "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V37-Fixed-Rebalancing.apk"
+
+      - name: Upload V37 APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-V36-Rebalancing
-          path: MF-Bucket-Tracker-V36-Rebalancing.apk
+          name: MF-Bucket-Tracker-V37-Fixed-Rebalancing
+          path: MF-Bucket-Tracker-V37-Fixed-Rebalancing.apk
