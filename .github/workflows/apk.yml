@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V39 Rebalancing
+name: Build MF Bucket Tracker V40 REAL Rebalancing
 
 on:
   workflow_dispatch:
@@ -21,30 +21,35 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and Extract V39 ZIP
+      - name: Find V40 Rebalancing ZIP
         shell: bash
         run: |
-          echo "Searching for V39 Rebalancing ZIP..."
+          echo "Searching for V40 Rebalancing ZIP..."
 
           ZIP=$(find . -type f \
-            \( -iname '*V39*Rebalancing*.zip' -o -iname '*LOCKED*REBALANCING*.zip' \) \
+            \( \
+              -iname '*V40*REAL*REBALANCING*FIXED*.zip' \
+              -o -iname '*V40*Rebalancing*.zip' \
+            \) \
             | head -n 1)
 
           if [ -z "$ZIP" ]; then
-            echo "ERROR: V39 Rebalancing ZIP not found!"
-            echo "Available ZIP files:"
+            echo "ERROR: V40 Rebalancing ZIP NOT FOUND!"
+            echo ""
+            echo "ZIP files available in repository:"
             find . -type f -iname '*.zip' -print
             exit 1
           fi
 
-          echo "Found ZIP: $ZIP"
+          echo "FOUND: $ZIP"
 
           rm -rf build-project
           mkdir -p build-project
 
           unzip -q "$ZIP" -d build-project
 
-          echo "Extracted files:"
+          echo ""
+          echo "EXTRACTED FILES:"
           find build-project -maxdepth 4 -type f | head -100
 
       - name: Locate Android Project
@@ -52,20 +57,29 @@ jobs:
         run: |
           PROJECT_DIR=$(find build-project \
             -type f \
-            \( -name "settings.gradle" -o -name "settings.gradle.kts" \) \
+            \( \
+              -name "settings.gradle" \
+              -o -name "settings.gradle.kts" \
+            \) \
             -printf '%h\n' \
             | head -n 1)
 
           if [ -z "$PROJECT_DIR" ]; then
-            echo "ERROR: Android project not found!"
-            echo "Searching for Gradle files..."
+            echo "ERROR: Android project NOT FOUND!"
+            echo ""
+            echo "Gradle files found:"
             find build-project -type f \
-              \( -name "build.gradle" -o -name "build.gradle.kts" \) \
+              \( \
+                -name "build.gradle" \
+                -o -name "build.gradle.kts" \
+              \) \
               -print
             exit 1
           fi
 
-          echo "Android Project: $PROJECT_DIR"
+          echo "ANDROID PROJECT:"
+          echo "$PROJECT_DIR"
+
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Setup Gradle
@@ -73,28 +87,33 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Make Gradle Executable
+      - name: Make Gradle Wrapper Executable
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
           if [ -f "./gradlew" ]; then
             chmod +x ./gradlew
+            echo "Gradle wrapper found."
+          else
+            echo "No gradlew found. System Gradle will be used."
           fi
 
-      - name: Build V39 Debug APK
+      - name: Build V40 Debug APK
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
+          echo "BUILDING V40 REAL REBALANCING APK..."
+
           if [ -f "./gradlew" ]; then
-            ./gradlew assembleDebug --no-daemon
+            ./gradlew clean assembleDebug --no-daemon
           else
-            gradle assembleDebug --no-daemon
+            gradle clean assembleDebug --no-daemon
           fi
 
-      - name: Find APK
+      - name: Find Generated APK
         shell: bash
         run: |
-          echo "Searching for APK..."
+          echo "Searching generated APK..."
 
           APK=$(find "${PROJECT_DIR}" \
             -type f \
@@ -102,18 +121,21 @@ jobs:
             | head -n 1)
 
           if [ -z "$APK" ]; then
-            echo "ERROR: APK was not generated!"
+            echo "ERROR: APK was NOT generated!"
             exit 1
           fi
 
-          echo "APK FOUND: $APK"
+          echo "APK FOUND:"
+          echo "$APK"
 
           mkdir -p apk-output
-          cp "$APK" apk-output/MF_Bucket_Tracker_V39_Rebalancing.apk
 
-      - name: Upload APK
+          cp "$APK" \
+            apk-output/MF_Bucket_Tracker_V40_REAL_REBALANCING.apk
+
+      - name: Upload V40 APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF_Bucket_Tracker_V39_Rebalancing_APK
-          path: apk-output/MF_Bucket_Tracker_V39_Rebalancing.apk
+          name: MF_Bucket_Tracker_V40_REAL_REBALANCING_APK
+          path: apk-output/MF_Bucket_Tracker_V40_REAL_REBALANCING.apk
           if-no-files-found: error
