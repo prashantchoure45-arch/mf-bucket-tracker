@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V38 Fixed Rebalancing
+name: Build MF Bucket Tracker V39 Rebalancing
 
 on:
   workflow_dispatch:
@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -20,19 +21,19 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and Extract V38 ZIP
+      - name: Find and Extract V39 ZIP
         shell: bash
         run: |
-          echo "Searching for V38 ZIP..."
+          echo "Searching for V39 Rebalancing ZIP..."
 
           ZIP=$(find . -type f \
-            -iname '*V38*Fixed*Rebalancing*.zip' \
+            \( -iname '*V39*Rebalancing*.zip' -o -iname '*LOCKED*REBALANCING*.zip' \) \
             | head -n 1)
 
           if [ -z "$ZIP" ]; then
-            echo "ERROR: V38 ZIP नहीं मिला"
+            echo "ERROR: V39 Rebalancing ZIP not found!"
             echo "Available ZIP files:"
-            find . -type f -name '*.zip' -print
+            find . -type f -iname '*.zip' -print
             exit 1
           fi
 
@@ -44,16 +45,23 @@ jobs:
           unzip -q "$ZIP" -d build-project
 
           echo "Extracted files:"
-          find build-project -maxdepth 3 -type f | head -100
+          find build-project -maxdepth 4 -type f | head -100
 
+      - name: Locate Android Project
+        shell: bash
+        run: |
           PROJECT_DIR=$(find build-project \
             -type f \
-            -name 'settings.gradle' \
+            \( -name "settings.gradle" -o -name "settings.gradle.kts" \) \
             -printf '%h\n' \
             | head -n 1)
 
           if [ -z "$PROJECT_DIR" ]; then
-            echo "ERROR: settings.gradle नहीं मिला"
+            echo "ERROR: Android project not found!"
+            echo "Searching for Gradle files..."
+            find build-project -type f \
+              \( -name "build.gradle" -o -name "build.gradle.kts" \) \
+              -print
             exit 1
           fi
 
@@ -65,29 +73,47 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Build V38 APK
+      - name: Make Gradle Executable
         working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
         run: |
-          gradle assembleDebug --no-daemon
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+          fi
+
+      - name: Build V39 Debug APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          if [ -f "./gradlew" ]; then
+            ./gradlew assembleDebug --no-daemon
+          else
+            gradle assembleDebug --no-daemon
+          fi
 
       - name: Find APK
         shell: bash
         run: |
-          APK=$(find "${{ env.PROJECT_DIR }}" \
+          echo "Searching for APK..."
+
+          APK=$(find "${PROJECT_DIR}" \
             -type f \
-            -name '*.apk' \
+            -name "*.apk" \
             | head -n 1)
 
           if [ -z "$APK" ]; then
-            echo "ERROR: APK नहीं मिला"
+            echo "ERROR: APK was not generated!"
             exit 1
           fi
 
-          echo "APK found: $APK"
-          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V38-Fixed-Rebalancing.apk"
+          echo "APK FOUND: $APK"
+
+          mkdir -p apk-output
+          cp "$APK" apk-output/MF_Bucket_Tracker_V39_Rebalancing.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-V38-Fixed-Rebalancing
-          path: MF-Bucket-Tracker-V38-Fixed-Rebalancing.apk
+          name: MF_Bucket_Tracker_V39_Rebalancing_APK
+          path: apk-output/MF_Bucket_Tracker_V39_Rebalancing.apk
+          if-no-files-found: error
