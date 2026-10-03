@@ -1,9 +1,10 @@
-name: Build MF Bucket Tracker v38 Fixed Rebalancing
+name: Build MF Bucket Tracker V38 Fixed Rebalancing
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
@@ -13,22 +14,80 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle
+      - name: Find and Extract V38 ZIP
+        shell: bash
+        run: |
+          echo "Searching for V38 ZIP..."
+
+          ZIP=$(find . -type f \
+            -iname '*V38*Fixed*Rebalancing*.zip' \
+            | head -n 1)
+
+          if [ -z "$ZIP" ]; then
+            echo "ERROR: V38 ZIP नहीं मिला"
+            echo "Available ZIP files:"
+            find . -type f -name '*.zip' -print
+            exit 1
+          fi
+
+          echo "Found ZIP: $ZIP"
+
+          rm -rf build-project
+          mkdir -p build-project
+
+          unzip -q "$ZIP" -d build-project
+
+          echo "Extracted files:"
+          find build-project -maxdepth 3 -type f | head -100
+
+          PROJECT_DIR=$(find build-project \
+            -type f \
+            -name 'settings.gradle' \
+            -printf '%h\n' \
+            | head -n 1)
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: settings.gradle नहीं मिला"
+            exit 1
+          fi
+
+          echo "Android Project: $PROJECT_DIR"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: Build V38 Fixed Rebalancing APK
-        run: gradle assembleDebug --no-daemon
+      - name: Build V38 APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          gradle assembleDebug --no-daemon
+
+      - name: Find APK
+        shell: bash
+        run: |
+          APK=$(find "${{ env.PROJECT_DIR }}" \
+            -type f \
+            -name '*.apk' \
+            | head -n 1)
+
+          if [ -z "$APK" ]; then
+            echo "ERROR: APK नहीं मिला"
+            exit 1
+          fi
+
+          echo "APK found: $APK"
+          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V38-Fixed-Rebalancing.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-v38-Fixed-Rebalancing
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: MF-Bucket-Tracker-V38-Fixed-Rebalancing
+          path: MF-Bucket-Tracker-V38-Fixed-Rebalancing.apk
