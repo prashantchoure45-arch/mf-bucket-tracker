@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V41 Minimal Rebalancing
+name: Build MF Bucket Tracker V36 Auto Rebalancing SAFE
 
 on:
   workflow_dispatch:
@@ -21,20 +21,17 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and Extract V41 ZIP
+      - name: Find and Extract V36 SAFE ZIP
         shell: bash
         run: |
-          echo "Searching for V41 ZIP..."
+          echo "Searching for V36 SAFE Auto Rebalancing ZIP..."
 
           ZIP=$(find . -type f \
-            \( \
-              -iname '*V41*REBALANCING*MINIMAL*FIX*.zip' \
-              -o -iname '*V41*Rebalancing*.zip' \
-            \) \
+            -iname '*V36*Auto*Rebalancing*SAFE*.zip' \
             | head -n 1)
 
           if [ -z "$ZIP" ]; then
-            echo "ERROR: V41 ZIP NOT FOUND!"
+            echo "ERROR: V36 SAFE ZIP NOT FOUND!"
             echo "Available ZIP files:"
             find . -type f -iname '*.zip' -print
             exit 1
@@ -63,12 +60,14 @@ jobs:
 
           if [ -z "$PROJECT_DIR" ]; then
             echo "ERROR: Android project not found!"
+
             find build-project -type f \
               \( \
                 -name "build.gradle" \
                 -o -name "build.gradle.kts" \
               \) \
               -print
+
             exit 1
           fi
 
@@ -88,11 +87,11 @@ jobs:
             chmod +x ./gradlew
           fi
 
-      - name: Build V41 APK
+      - name: Build V36 Auto Rebalancing APK
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
-          echo "Building V41 Minimal Rebalancing APK..."
+          echo "Building V36 Auto Rebalancing SAFE APK..."
 
           if [ -f "./gradlew" ]; then
             ./gradlew clean assembleDebug --no-daemon
@@ -118,11 +117,11 @@ jobs:
           mkdir -p apk-output
 
           cp "$APK" \
-            apk-output/MF_Bucket_Tracker_V41_REBALANCING.apk
+            apk-output/MF_Bucket_Tracker_V36_AUTO_REBALANCING.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF_Bucket_Tracker_V41_REBALANCING_APK
-          path: apk-output/MF_Bucket_Tracker_V41_REBALANCING.apk
+          name: MF_Bucket_Tracker_V36_AUTO_REBALANCING_APK
+          path: apk-output/MF_Bucket_Tracker_V36_AUTO_REBALANCING.apk
           if-no-files-found: error
