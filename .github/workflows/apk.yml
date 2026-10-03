@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V36 Signed APK
+name: Build MF Bucket Tracker V36 Rebalancing APK
 
 on:
   workflow_dispatch:
@@ -11,113 +11,70 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
-
-      - name: Find latest MF Bucket Tracker ZIP
+      - name: Find V36 Rebalancing ZIP
         shell: bash
         run: |
-          set -e
-
-          ZIP=$(find . -maxdepth 1 -type f -name 'MF_Bucket_Tracker_*.zip' \
-            ! -name '*APK*' \
-            -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)
+          ZIP=$(find . -maxdepth 2 -type f \
+            -iname '*V36*Locked*Auto*Rebalance*.zip' \
+            | head -n 1)
 
           if [ -z "$ZIP" ]; then
-            echo "No MF Bucket Tracker ZIP found"
+            echo "V36 Rebalancing ZIP नहीं मिला"
             exit 1
           fi
 
-          echo "Using: $ZIP"
+          echo "ZIP मिला: $ZIP"
 
+          rm -rf build-project
           mkdir -p build-project
+
           unzip -q "$ZIP" -d build-project
 
           PROJECT_DIR=$(find build-project -type f -name settings.gradle \
-            -o -type f -name settings.gradle.kts | head -n 1 | xargs -r dirname)
+            -printf '%h\n' | head -n 1)
 
           if [ -z "$PROJECT_DIR" ]; then
-            echo "Android project not found"
+            echo "Android project नहीं मिला"
             exit 1
           fi
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
-      - name: Prepare persistent signing key
-        shell: bash
-        env:
-          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        run: |
-          set -e
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
 
-          echo "$SIGNING_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mftracker.keystore"
-
-          test -s "$RUNNER_TEMP/mftracker.keystore"
-
-          echo "KEYSTORE_FILE=$RUNNER_TEMP/mftracker.keystore" >> "$GITHUB_ENV"
-
-      - name: Build APK
+      - name: Build V36 Rebalancing APK
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           gradle assembleDebug --no-daemon
 
-      - name: Locate APK
+      - name: Find APK
         shell: bash
         run: |
-          APK=$(find "${PROJECT_DIR}/app/build/outputs/apk" \
+          APK=$(find "${{ env.PROJECT_DIR }}" \
             -type f -name '*.apk' | head -n 1)
 
           if [ -z "$APK" ]; then
-            echo "APK not found"
+            echo "APK नहीं मिला"
             exit 1
           fi
 
-          echo "APK=$APK" >> "$GITHUB_ENV"
+          echo "APK: $APK"
+          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V36-Rebalancing.apk"
 
-      - name: Sign APK with permanent key
-        shell: bash
-        env:
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        run: |
-          set -e
-
-          BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" \
-            -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
-
-          "$BUILD_TOOLS/zipalign" -f -p 4 \
-            "$APK" \
-            "$RUNNER_TEMP/aligned.apk"
-
-          "$BUILD_TOOLS/apksigner" sign \
-            --ks "$KEYSTORE_FILE" \
-            --ks-pass "pass:$SIGNING_STORE_PASSWORD" \
-            --ks-key-alias "$SIGNING_KEY_ALIAS" \
-            --key-pass "pass:$SIGNING_KEY_PASSWORD" \
-            --out "$RUNNER_TEMP/MF-Bucket-Tracker-V36-Signed.apk" \
-            "$RUNNER_TEMP/aligned.apk"
-
-          "$BUILD_TOOLS/apksigner" verify --verbose \
-            "$RUNNER_TEMP/MF-Bucket-Tracker-V36-Signed.apk"
-
-      - name: Upload signed APK
+      - name: Upload V36 Rebalancing APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-V36-Signed-APK
-          path: ${{ runner.temp }}/MF-Bucket-Tracker-V36-Signed.apk
-          if-no-files-found: error
+          name: MF-Bucket-Tracker-V36-Rebalancing
+          path: MF-Bucket-Tracker-V36-Rebalancing.apk
