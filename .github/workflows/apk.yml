@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V35 Full Article Fix
+name: Build MF Bucket Tracker V36 Signed APK
 
 on:
   workflow_dispatch:
@@ -47,31 +47,101 @@ jobs:
           echo "Android project: $PROJECT"
           echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
 
+      - name: Restore permanent signing keystore
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+        run: |
+          set -e
+
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "SIGNING_KEYSTORE_BASE64 secret is missing"
+            exit 1
+          fi
+
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$PROJECT/app/mf-release.jks"
+
+          if [ ! -s "$PROJECT/app/mf-release.jks" ]; then
+            echo "Keystore was not created"
+            exit 1
+          fi
+
+          echo "Permanent signing keystore restored"
+
+      - name: Configure signed release
+        shell: bash
+        env:
+          STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          set -e
+
+          if [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "One or more signing secrets are missing"
+            exit 1
+          fi
+
+          cat >> "$PROJECT/app/build.gradle" <<'EOF'
+
+          // MF Bucket Tracker V36 permanent signing configuration
+          android {
+              defaultConfig {
+                  versionCode 36
+                  versionName "36.0"
+              }
+
+              signingConfigs {
+                  release {
+                      storeFile file("mf-release.jks")
+                      storePassword System.getenv("STORE_PASSWORD")
+                      keyAlias System.getenv("KEY_ALIAS")
+                      keyPassword System.getenv("KEY_PASSWORD")
+                  }
+              }
+
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          EOF
+
+          echo "Signed release configuration added"
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: Build V35 Debug APK
+      - name: Build V36 Signed Release APK
         working-directory: ${{ env.PROJECT }}
-        run: gradle assembleDebug --no-daemon
+        env:
+          STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          gradle assembleRelease --no-daemon
 
       - name: Find APK
         shell: bash
         run: |
           set -e
 
-          APK="$(find "${PROJECT}/app/build/outputs/apk/debug" -type f -name '*.apk' | head -n 1)"
+          APK="$(find "${PROJECT}/app/build/outputs/apk/release" -type f -name '*.apk' | head -n 1)"
 
           if [ -z "$APK" ]; then
-            echo "APK not found"
+            echo "Signed release APK not found"
             exit 1
           fi
 
-          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V35.apk"
+          echo "APK found: $APK"
+          cp "$APK" "$GITHUB_WORKSPACE/MF-Bucket-Tracker-V36-Signed.apk"
 
-      - name: Upload V35 APK
+      - name: Upload V36 Signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: MF-Bucket-Tracker-V35-Full-Article-Fix-APK
-          path: MF-Bucket-Tracker-V35.apk
+          name: MF-Bucket-Tracker-V36-Signed
+          path: MF-Bucket-Tracker-V36-Signed.apk
