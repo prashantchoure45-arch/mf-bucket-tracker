@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V36 Auto Rebalancing SAFE
+name: Build MF Bucket Tracker V37 Fill Rebalance FIXED
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and Extract V36 SAFE ZIP
+      - name: Build V37 Fill Rebalance FIXED APK
         shell: bash
         run: |
           echo "Searching for V36 SAFE Auto Rebalancing ZIP..."
@@ -33,7 +33,7 @@ jobs:
             
 
           if [ -z "$ZIP" ]; then
-            echo "ERROR: V36 SAFE ZIP NOT FOUND!"
+            echo "Building V37 Fill Rebalance FIXED APK..."
             echo "Available ZIP files:"
             find . -type f -iname '*.zip' -print
             exit 1
