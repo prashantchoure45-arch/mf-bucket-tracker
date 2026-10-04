@@ -27,8 +27,10 @@ jobs:
           echo "Searching for V36 SAFE Auto Rebalancing ZIP..."
 
           ZIP=$(find . -type f \
-            -iname '*V36*Auto*Rebalancing*SAFE*.zip' \
-            | head -n 1)
+  -iname '*V37*Fill*Rebalance*FIXED*FINAL*.zip' \
+  | head -n 1)
+            
+            
 
           if [ -z "$ZIP" ]; then
             echo "ERROR: V36 SAFE ZIP NOT FOUND!"
