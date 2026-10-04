@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V100 Fill Rebalance FIXED
+name: Build MF Bucket Tracker V100 Previous Amount
 
 on:
   workflow_dispatch:
@@ -21,17 +21,17 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and Extract V100 Fill Rebalance FIXED ZIP
+      - name: Find and Extract V100 Previous Amount ZIP
         shell: bash
         run: |
-          echo "Searching for V100 Fill Rebalance FIXED ZIP..."
+          echo "Searching for exact V100 Previous Amount ZIP..."
 
           ZIP=$(find . -type f \
-            -iname 'MF_Bucket_Tracker_V100_Fill_Rebalance_FIXED.zip' \
+            -iname 'MF_Bucket_Tracker_V100_Fill_Rebalance_FIXED_Previous_Amount.zip' \
             | head -n 1)
 
           if [ -z "$ZIP" ]; then
-            echo "ERROR: V100 Fill Rebalance FIXED ZIP NOT FOUND!"
+            echo "ERROR: V100 Previous Amount ZIP NOT FOUND!"
             echo "Available ZIP files:"
             find . -type f -iname '*.zip' -print
             exit 1
@@ -49,20 +49,14 @@ jobs:
       - name: Locate Android Project
         shell: bash
         run: |
-          echo "Searching for Android project..."
-
-          PROJECT_DIR=""
-
-          while IFS= read -r file; do
-            PROJECT_DIR=$(dirname "$file")
-            break
-          done < <(
-            find build-project -type f \
-              \( \
-                -name "settings.gradle" \
-                -o -name "settings.gradle.kts" \
-              \)
-          )
+          PROJECT_DIR=$(find build-project \
+            -type f \
+            \( \
+              -name "settings.gradle" \
+              -o -name "settings.gradle.kts" \
+            \) \
+            -printf '%h\n' \
+            | head -n 1)
 
           if [ -z "$PROJECT_DIR" ]; then
             echo "ERROR: Android project not found!"
@@ -93,16 +87,44 @@ jobs:
             chmod +x ./gradlew
           fi
 
-      - name: Build V100 Fill Rebalance FIXED APK
+      - name: Build V100 Previous Amount APK
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
-          echo "Building V100 Fill Rebalance FIXED APK..."
+          echo "Building V100 Previous Amount APK..."
 
           if [ -f "./gradlew" ]; then
             ./gradlew clean assembleDebug --no-daemon
           else
             gradle clean assembleDebug --no-daemon
+          fi
+
+      - name: Find APK
+        shell: bash
+        run: |
+          APK=$(find "${PROJECT_DIR}" \
+            -type f \
+            -name "*.apk" \
+            | head -n 1)
+
+          if [ -z "$APK" ]; then
+            echo "ERROR: APK was not generated!"
+            exit 1
+          fi
+
+          echo "APK FOUND: $APK"
+
+          mkdir -p apk-output
+
+          cp "$APK" \
+            apk-output/MF_Bucket_Tracker_V100_PREVIOUS_AMOUNT.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MF_Bucket_Tracker_V100_PREVIOUS_AMOUNT_APK
+          path: apk-output/MF_Bucket_Tracker_V100_PREVIOUS_AMOUNT.apk
+          if-no-files-found: error
           fi
 
       - name: Find APK
