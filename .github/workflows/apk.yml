@@ -1,4 +1,4 @@
-name: Build MF Bucket Tracker V100 Fill Rebalance FIXED
+name: Build MF Bucket Tracker V37 Fill Rebalance FIXED
 
 on:
   workflow_dispatch:
@@ -21,23 +21,21 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Find and Extract V100 Fill Rebalance ZIP
+      - name: Find and Extract V37 ZIP
         shell: bash
         run: |
-          echo "Searching for V100 Fill Rebalance ZIP..."
+          echo "Searching for V37 Fill Rebalance ZIP..."
 
-          ZIP=$(find . -type f \
-            -iname '*V100*Fill*Rebalance*.zip' \
-            | head -n 1)
+          ZIP=$(find . -type f -iname '*V37*Fill*Rebalance*.zip' | head -n 1)
 
           if [ -z "$ZIP" ]; then
-            echo "ERROR: V100 Fill Rebalance ZIP NOT FOUND!"
+            echo "ERROR: V37 Fill Rebalance ZIP NOT FOUND!"
             echo "Available ZIP files:"
             find . -type f -iname '*.zip' -print
             exit 1
           fi
 
-          echo "FOUND: $ZIP"
+          echo "FOUND ZIP: $ZIP"
 
           rm -rf build-project
           mkdir -p build-project
@@ -49,25 +47,19 @@ jobs:
       - name: Locate Android Project
         shell: bash
         run: |
-          PROJECT_DIR=$(find build-project \
-            -type f \
-            \
-              -name "settings.gradle" \
-              -o -name "settings.gradle.kts" \
-            \
-            -printf '%h\n' \
-            | head -n 1)
+          echo "Searching for Android project..."
+
+          PROJECT_DIR=""
+
+          while IFS= read -r file; do
+            PROJECT_DIR=$(dirname "$file")
+            break
+          done < <(find build-project -type f \( -name 'settings.gradle' -o -name 'settings.gradle.kts' \))
 
           if [ -z "$PROJECT_DIR" ]; then
             echo "ERROR: Android project not found!"
-
-            find build-project -type f \
-              \
-                -name "build.gradle" \
-                -o -name "build.gradle.kts" \
-              \
-              -print
-
+            echo "Files inside ZIP:"
+            find build-project -maxdepth 5 -type f | head -n 200
             exit 1
           fi
 
@@ -87,11 +79,11 @@ jobs:
             chmod +x ./gradlew
           fi
 
-      - name: Build V100 Fill Rebalance FIXED APK
+      - name: Build V37 Fill Rebalance FIXED APK
         working-directory: ${{ env.PROJECT_DIR }}
         shell: bash
         run: |
-          echo "Building V100 Fill Rebalance FIXED APK..."
+          echo "Building V37 Fill Rebalance FIXED APK..."
 
           if [ -f "./gradlew" ]; then
             ./gradlew clean assembleDebug --no-daemon
@@ -102,11 +94,22 @@ jobs:
       - name: Find APK
         shell: bash
         run: |
-          APK=$(find "${PROJECT_DIR}" \
-            -type f \
-            -name "*.apk" \
-            | head -n 1)
+          APK=$(find "${PROJECT_DIR}" -type f -name '*.apk' | head -n 1)
 
           if [ -z "$APK" ]; then
             echo "ERROR: APK was not generated!"
-            exit
+            exit 1
+          fi
+
+          echo "APK FOUND: $APK"
+
+          mkdir -p apk-output
+
+          cp "$APK" "apk-output/MF_Bucket_Tracker_V37_FILL_REBALANCE_FIXED.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MF_Bucket_Tracker_V37_FILL_REBALANCE_FIXED_APK
+          path: apk-output/MF_Bucket_Tracker_V37_FILL_REBALANCE_FIXED.apk
+          if-no-files-found: error
