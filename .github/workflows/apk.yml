@@ -125,31 +125,3 @@ jobs:
           name: MF_Bucket_Tracker_V100_PREVIOUS_AMOUNT_APK
           path: apk-output/MF_Bucket_Tracker_V100_PREVIOUS_AMOUNT.apk
           if-no-files-found: error
-          fi
-
-      - name: Find APK
-        shell: bash
-        run: |
-          APK=$(find "${PROJECT_DIR}" \
-            -type f \
-            -name "*.apk" \
-            | head -n 1)
-
-          if [ -z "$APK" ]; then
-            echo "ERROR: APK was not generated!"
-            exit 1
-          fi
-
-          echo "APK FOUND: $APK"
-
-          mkdir -p apk-output
-
-          cp "$APK" \
-            apk-output/MF_Bucket_Tracker_V100_FILL_REBALANCE_FIXED.apk
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: MF_Bucket_Tracker_V100_FILL_REBALANCE_FIXED_APK
-          path: apk-output/MF_Bucket_Tracker_V100_FILL_REBALANCE_FIXED.apk
-          if-no-files-found: error
